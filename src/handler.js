@@ -1,52 +1,22 @@
 /* eslint-disable no-unused-vars */
 const { nanoid } = require("nanoid");
 const reviews = require("./reviews");
-const { MongoClient, ServerApiVersion } = require('mongodb');
 const data_motif_batik = require("./dataMotif")
-const { ObjectId } = require('mongodb');
 const data_daerah_penghasil = require('./dataDaerah')
 require('dotenv').config();
+const admin = require('firebase-admin');
 
-//konfihurasi mongoDB
-const uri = process.env.MONGODB_URI;
-if (!uri) {
-    console.error('MONGODB_URI is not defined');
-    process.exit(1);
-}
-const client = new MongoClient(uri, {
-    serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-      }
-    });
+// Konfigurasi Firebase
+const serviceAccount = require('../keys/cultik-database-firebase-adminsdk-dlsjo-5a76ddf252.json');
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
 
+const db = admin.firestore();
 
-let reviewsCollection;
-let dataDaerahPenghasilCollection;
-let dataMotifBatikCollection;
-
-
-    const connectToDatabase = async () => {
-        try {
-        console.log('Connecting to MongoDB...');
-        await client.connect();
-        console.log('MongoDB connected successfully.');
-
-
-          const database = client.db('Cultik_DataBase');
-          reviewsCollection = database.collection('reviews');
-          dataDaerahPenghasilCollection = database.collection('data_daerah_penghasil');
-          dataMotifBatikCollection = database.collection('data_motif_batik');
-
-          console.log('Collections initialized.');
-        } catch (err) {
-          console.error('Failed to connect to MongoDB:', err.message);
-          setTimeout(connectToDatabase, 5000); 
-        }
-      };
-      
-connectToDatabase();
+const reviewsCollection = db.collection('reviews');
+const dataDaerahPenghasilCollection = db.collection('data_daerah_penghasil');
+const dataMotifBatikCollection = db.collection('data_motif_batik');
 
 // Masukin Review
 const addReviewHandler = async (request, h) => {
@@ -57,7 +27,7 @@ const addReviewHandler = async (request, h) => {
 
     try {
         console.log('Adding review...');
-        await reviewsCollection.insertOne(newReview);
+        await reviewsCollection.doc(id).set(newReview);
         console.log('Review added successfully:', newReview);
         const response = h.response({
             status: 'success',
@@ -82,11 +52,12 @@ const getReviewsByDaerahIdHandler = async (request, h) => {
     const { daerahId } = request.params;
     try {
         console.log('Fetching reviews for daerahId:', daerahId);
-        const daerahReviews = await reviewsCollection.find({ daerahId }).toArray();
-        if (daerahReviews.length > 0) {
+        const daerahReviews = await reviewsCollection.where('daerahId', '==', daerahId).get();
+        if (!daerahReviews.empty) {
+            const reviewsArray = daerahReviews.docs.map(doc => doc.data());
             return {
                 status: 'success',
-                data: { reviews: daerahReviews },
+                data: { reviews: reviewsArray },
             };
         } else {
             return {
@@ -108,16 +79,10 @@ const deleteReviewByIdHandler = async (request, h) => {
     const { id } = request.params;
     try {
         console.log('Deleting review with id:', id);
-        const result = await reviewsCollection.deleteOne({ id });
+        const reviewRef = reviewsCollection.doc(id);
+        const review = await reviewRef.get();
 
-        if (result.deletedCount === 1) {
-            const response = h.response({
-                status: 'success',
-                message: 'Review berhasil dihapus',
-            });
-            response.code(200);
-            return response;
-        } else {
+        if (!review.exists) {
             const response = h.response({
                 status: 'fail',
                 message: 'Review gagal dihapus. Id tidak ditemukan',
@@ -125,6 +90,14 @@ const deleteReviewByIdHandler = async (request, h) => {
             response.code(404);
             return response;
         }
+
+        await reviewRef.delete();
+        const response = h.response({
+            status: 'success',
+            message: 'Review berhasil dihapus',
+        });
+        response.code(200);
+        return response;
     } catch (error) {
         console.error('Failed to delete review:', error.message);
         const response = h.response({
@@ -140,10 +113,11 @@ const deleteReviewByIdHandler = async (request, h) => {
 const getAllMotifBatikHandler = async (request, h) => {
     try {
         console.log('Fetching all motif batik...');
-        const data_motif_batik = await dataMotifBatikCollection.find().toArray();
+        const data_motif_batik = await dataMotifBatikCollection.get();
+        const motifBatikArray = data_motif_batik.docs.map(doc => doc.data());
         return {
             status: 'success',
-            data: { data_motif_batik },
+            data: { data_motif_batik: motifBatikArray },
         };
     } catch (error) {
         console.error('Failed to fetch data_motif_batik:', error.message);
@@ -159,13 +133,12 @@ const getMotifBatikByIdHandler = async (request, h) => {
     const { id } = request.params;
     try {
         console.log('Fetching motif batik with id:', id);
-        const objectId = new ObjectId(id);
-        const motifBatikId = await dataMotifBatikCollection.findOne({ _id: objectId });
+        const motifBatikId = await dataMotifBatikCollection.doc(id).get();
 
-        if (motifBatikId) {
+        if (motifBatikId.exists) {
             return {
                 status: 'success',
-                data: { motifBatikId },
+                data: { motifBatikId: motifBatikId.data() },
             };
         } else {
             return {
@@ -188,10 +161,11 @@ const getMotifBatikByIdHandler = async (request, h) => {
 const getAllDaerahHandler = async (request, h) => {
     try {
         console.log('Fetching all daerah penghasil...');
-        const data_daerah_penghasil = await dataDaerahPenghasilCollection.find().toArray();
+        const data_daerah_penghasil = await dataDaerahPenghasilCollection.get();
+        const daerahArray = data_daerah_penghasil.docs.map(doc => doc.data());
         return {
             status: 'success',
-            data: { data_daerah_penghasil },
+            data: { data_daerah_penghasil: daerahArray },
         };
     } catch (error) {
         console.error('Failed to fetch data_daerah_penghasil:', error.message);
@@ -201,19 +175,19 @@ const getAllDaerahHandler = async (request, h) => {
         };
     }
 };
-  
-  // Dapatkan daerah berdasarkan Id
-  const getDaerahByIdHandler = async (request, h) => {
+
+
+// Dapatkan daerah berdasarkan Id
+const getDaerahByIdHandler = async (request, h) => {
     const { id } = request.params;
     try {
         console.log('Fetching daerah with id:', id);
-        const objectId = new ObjectId(id);
-        const dataDaerahId = await dataDaerahPenghasilCollection.findOne({ _id: objectId });
+        const dataDaerahId = await dataDaerahPenghasilCollection.doc(id).get();
 
-        if (dataDaerahId) {
+        if (dataDaerahId.exists) {
             return {
                 status: 'success',
-                data: { dataDaerahId },
+                data: { dataDaerahId: dataDaerahId.data() },
             };
         } else {
             return {
@@ -231,10 +205,10 @@ const getAllDaerahHandler = async (request, h) => {
 };
 
   // Logging saat aplikasi dihentikan
-process.on('SIGINT', async () => {
-    console.log('Closing MongoDB connection...');
-    await client.close();
-    console.log('MongoDB connection closed');
+  process.on('SIGINT', async () => {
+    console.log('Closing Firestore connection...');
+    await admin.app().delete();
+    console.log('Firestore connection closed');
     process.exit(0);
 });
 

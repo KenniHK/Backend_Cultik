@@ -16,7 +16,7 @@ admin.initializeApp({
 const db = admin.firestore();
 
 const reviewsCollection = db.collection('reviews');
-const dataDaerahPenghasilCollection = db.collection('data_daerah_penghasil');
+const dataDaerahPenghasilCollection = db.collection('daerah_penghasil');
 const dataMotifBatikCollection = db.collection('data_motif_batik');
 
 // Masukin Review
@@ -162,14 +162,14 @@ const getMotifBatikByIdHandler = async (request, h) => {
 const getAllDaerahHandler = async (request, h) => {
     try {
         console.log('Fetching all daerah penghasil...');
-        const data_daerah_penghasil = await dataDaerahPenghasilCollection.get();
-        const daerahArray = data_daerah_penghasil.docs.map(doc => doc.data());
+        const daerah_penghasil = await dataDaerahPenghasilCollection.get();
+        const daerahArray = daerah_penghasil.docs.map(doc => doc.data());
         return {
             status: 'success',
-            data: { data_daerah_penghasil: daerahArray },
+            data: { daerah_penghasil: daerahArray },
         };
     } catch (error) {
-        console.error('Failed to fetch data_daerah_penghasil:', error.message);
+        console.error('Failed to fetch daerah_penghasil:', error.message);
         return {
             status: 'fail',
             message: 'Gagal mengambil data daerah',

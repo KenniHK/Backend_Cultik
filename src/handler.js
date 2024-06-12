@@ -7,7 +7,7 @@ require('dotenv').config();
 const admin = require('firebase-admin');
 
 // Konfigurasi Firebase
-const serviceAccount = require('../keys/cultik-database-firebase-adminsdk-dlsjo-5a76ddf252.json');
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });

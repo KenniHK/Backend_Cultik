@@ -7,9 +7,10 @@ require('dotenv').config();
 const admin = require('firebase-admin');
 
 // Konfigurasi Firebase
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+console.log('Firebase config:', process.env.FIREBASE_CONFIG);
+const firebaseConfig = JSON.parse(process.env.FIREBASE_CONFIG);
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
+  credential: admin.credential.cert(firebaseConfig),
 });
 
 const db = admin.firestore();

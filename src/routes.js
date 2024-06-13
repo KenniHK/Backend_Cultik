@@ -1,5 +1,12 @@
 /* eslint-disable no-unused-vars */
-const { addReviewHandler, getReviewsByDaerahIdHandler, deleteReviewByIdHandler, getAllMotifBatikHandler, getAllDaerahHandler, getMotifBatikByIdHandler, getDaerahByIdHandler } = require("./handler");
+const { addReviewHandler, 
+  getReviewsByDaerahIdHandler, 
+  deleteReviewByIdHandler, 
+  getAllMotifBatikHandler, 
+  getAllDaerahHandler, 
+  getMotifBatikByIdHandler, 
+  getDaerahByIdHandler,
+  getAllAlatHandler } = require("./handler");
 
 const routes = [
     {
@@ -69,6 +76,11 @@ const routes = [
       method: 'GET',
       path: '/dataPenghasil/{id}',
       handler: getDaerahByIdHandler,
+    },
+    {
+      method: 'GET',
+      path: '/alatBatik',
+      handler: getAllAlatHandler,
     }
    ];
     

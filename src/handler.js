@@ -18,6 +18,7 @@ const db = admin.firestore();
 const reviewsCollection = db.collection('reviews');
 const dataDaerahPenghasilCollection = db.collection('daerah_penghasil');
 const dataMotifBatikCollection = db.collection('data_motif_batik');
+const dataAlatCollection = db.collection('alat_batik');
 
 // Masukin Review
 const addReviewHandler = async (request, h) => {
@@ -214,10 +215,30 @@ const getDaerahByIdHandler = async (request, h) => {
 });
 
 
+//dapatakan semua data ALat
+const getAllAlatHandler = async (request, h) => {
+    try {
+        console.log('Fetching all alat batik...');
+        const data_alat_batik = await dataAlatCollection.get();
+        const alatBatikArray = data_alat_batik.docs.map(doc => doc.data());
+        return {
+            status: 'success',
+            data: { data_alat_batik: alatBatikArray },
+        };
+    } catch (error) {
+        console.error('Failed to fetch data alat batik:', error.message);
+        return {
+            status: 'fail',
+            message: 'Gagal mengambil data alat batik',
+        };
+    }
+};
+
 module.exports = {addReviewHandler, 
                 getReviewsByDaerahIdHandler, 
                 deleteReviewByIdHandler, 
                 getAllMotifBatikHandler, 
                 getAllDaerahHandler, 
                 getMotifBatikByIdHandler,
-                getDaerahByIdHandler};
+                getDaerahByIdHandler,
+                getAllAlatHandler};
